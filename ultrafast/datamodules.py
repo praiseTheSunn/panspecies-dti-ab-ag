@@ -446,32 +446,32 @@ class DTIDataModule(pl.LightningDataModule):
         self.target_featurizer.cpu()
 
     def setup(self, stage = None):
-        self.df_train = pd.read_csv(self._data_dir / self._train_path, **self._csv_kwargs, dtype={self._target_column: str})
-        self.df_val = pd.read_csv(self._data_dir / self._val_path, **self._csv_kwargs, dtype={self._target_column: str})
-        self.df_test = pd.read_csv(self._data_dir / self._test_path, **self._csv_kwargs, dtype={self._target_column: str})
+        # self.df_train = pd.read_csv(self._data_dir / self._train_path, **self._csv_kwargs, dtype={self._target_column: str})
+        # self.df_val = pd.read_csv(self._data_dir / self._val_path, **self._csv_kwargs, dtype={self._target_column: str})
+        # self.df_test = pd.read_csv(self._data_dir / self._test_path, **self._csv_kwargs, dtype={self._target_column: str})
 
-        self._dataframes = [self.df_train, self.df_val, self.df_test]
+        # self._dataframes = [self.df_train, self.df_val, self.df_test]
 
-        all_drugs = pd.concat([i[self._drug_column] for i in self._dataframes]).unique()
-        all_targets = pd.concat([i[self._target_column] for i in self._dataframes]).unique()
+        # all_drugs = pd.concat([i[self._drug_column] for i in self._dataframes]).unique()
+        # all_targets = pd.concat([i[self._target_column] for i in self._dataframes]).unique()
 
-        if self._device.type == "cuda":
-            self.drug_featurizer.cuda(self._device)
-            self.target_featurizer.cuda(self._device)
+        # if self._device.type == "cuda":
+            # self.drug_featurizer.cuda(self._device)
+            # self.target_featurizer.cuda(self._device)
 
-        self.drug_featurizer.preload(all_drugs)
-        self.drug_featurizer.cpu()
+        # self.drug_featurizer.preload(all_drugs)
+        # self.drug_featurizer.cpu()
 
-        self.target_featurizer.preload(all_targets)
-        self.target_featurizer.cpu()
+        # self.target_featurizer.preload(all_targets)
+        # self.target_featurizer.cpu()
 
         if stage == "fit" or stage is None:
-            self.data_train = AbAgContrastiveDataset(self.train_sequences, antibody_embeddings, antigen_embeddings)
+            self.data_train = AbAgContrastiveDataset(self.train_sequences, self.antibody_embeddings, self.antigen_embeddings)
 
-            self.data_val = AbAgContrastiveDataset(self.val_sequences, antibody_embeddings, antigen_embeddings)
+            self.data_val = AbAgContrastiveDataset(self.val_sequences, self.antibody_embeddings, self.antigen_embeddings)
 
         if stage == "test" or stage is None:
-            self.data_test = AbAgContrastiveDataset(self.test_sequences, antibody_embeddings, antigen_embeddings)
+            self.data_test = AbAgContrastiveDataset(self.test_sequences, self.antibody_embeddings, self.antigen_embeddings)
 
     def train_dataloader(self):
         return DataLoader(self.data_train, **self._loader_kwargs)
