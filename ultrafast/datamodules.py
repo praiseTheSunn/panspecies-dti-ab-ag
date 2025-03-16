@@ -22,6 +22,8 @@ from typing import Optional
 from ultrafast.featurizers import Featurizer
 from ultrafast.tdc_utils import compute_ESM_features, get_saprot_seq
 
+import pickle
+
 def get_task_dir(task_name: str):
     """
     Get the path to data for each benchmark data set
@@ -400,11 +402,11 @@ class DTIDataModule(pl.LightningDataModule):
 
         self.drug_db, self.target_db = None, None
 
-        self.antigen_embeddings = load_embeddings("/content/panspecies-dti-ab-ag/antigen.pkl")
-        self.antibody_embeddings = load_embeddings("/content/panspecies-dti-ab-ag/antibody.pkl")
-        self.train_sequences = load_sequences("/content/panspecies-dti-ab-ag/train_pairs.csv")
-        self.val_sequences = load_sequences("/content/panspecies-dti-ab-ag/val_pairs.csv")
-        self.test_sequences = load_sequences("/content/panspecies-dti-ab-ag/test_pairs.csv")
+        self.antigen_embeddings = load_embeddings(Path("./antigen.pkl"))
+        self.antibody_embeddings = load_embeddings(Path("./antibody.pkl"))
+        self.train_sequences = load_sequences(Path("./train_pairs.csv"))
+        self.val_sequences = load_sequences(Path("./val_pairs.csv"))
+        self.test_sequences = load_sequences(Path("./test_pairs.csv"))
 
         
 
