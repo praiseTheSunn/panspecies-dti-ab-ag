@@ -412,6 +412,7 @@ class DTIDataModule(pl.LightningDataModule):
 
 
     def prepare_data(self):
+        pass
         # """
         # Featurize drugs and targets and save them to disk if they don't already exist
         # """
