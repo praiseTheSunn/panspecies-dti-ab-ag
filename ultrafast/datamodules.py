@@ -159,7 +159,51 @@ def make_diffprot_contrastive(
     )
 
     return contrastive
+# --------------------------------------------
+# HOANG
+def load_embeddings(file_path):
+    """Load embeddings from a pickle file and return the embeddings dictionary."""
+    with open(file_path, "rb") as f:
+        embeddings = pickle.load(f)
+    return embeddings
 
+def load_sequences(file_path):
+    """Load sequences from a CSV file and return them as a dictionary."""
+    df = pd.read_csv(file_path)
+    print(df.columns)
+    
+    return {
+        "heavy": df['Antibody sequence_heavy'].values,
+        "light": df['Antibody sequence_light'].values,
+        "antigen": df['Antigen sequence'].values,
+        "delta_g": df['delta_g'].values
+    }
+
+# Contrastive Dataset
+class AbAgContrastiveDataset(Dataset):
+    def __init__(self, sequences, antibody_embeddings, antigen_embeddings):
+        self.antibody_embeddings = antibody_embeddings
+        self.antigen_embeddings = antigen_embeddings
+        self.pairs = []
+        
+        for h, l, ag, delta_g in tqdm(zip(sequences["heavy"], sequences["light"], sequences["antigen"], sequences["delta_g"]), desc = "Loading dataset"):
+            if (h, l) in antibody_embeddings and ag in antigen_embeddings:
+                self.pairs.append((((h, l), ag), delta_g))
+
+    def __len__(self):
+        return len(self.pairs)
+    
+    def __getitem__(self, idx):
+        ((h, l), ag), delta_g = self.pairs[idx]
+        # ab_embed = torch.tensor(, dtype=torch.float32)
+        ab_embed = self.antibody_embeddings[(h, l)].clone().detach()
+        # ag_embed = torch.tensor(self.antigen_embeddings[ag], dtype=torch.float32)
+        ag_embed = self.antigen_embeddings[ag].clone().detach()
+        # print("GET ITEM: ", type(ab_embed.data), type(ag_embed.data))
+        delta_g = float(delta_g)
+        return ab_embed, ag_embed, delta_g
+
+# ---------------------------------------
 class BinaryDataset(Dataset):
     def __init__(
         self,
@@ -293,6 +337,7 @@ class EmbedDataset(Dataset):
         if self.db is not None:
             self.db.close()
 
+# ------------- CHANGED ---------------------
 class DTIDataModule(pl.LightningDataModule):
     """ DataModule used for training on drug-target interaction data.
     Uses the following data sets:
@@ -355,6 +400,15 @@ class DTIDataModule(pl.LightningDataModule):
 
         self.drug_db, self.target_db = None, None
 
+        self.antigen_embeddings = load_embeddings("/content/panspecies-dti-ab-ag/antigen.pkl")
+        self.antibody_embeddings = load_embeddings("/content/panspecies-dti-ab-ag/antibody.pkl")
+        self.train_sequences = load_sequences("/content/panspecies-dti-ab-ag/train_pairs.csv")
+        self.val_sequences = load_sequences("/content/panspecies-dti-ab-ag/val_pairs.csv")
+        self.test_sequences = load_sequences("/content/panspecies-dti-ab-ag/test_pairs.csv")
+
+        
+
+
     def prepare_data(self):
         """
         Featurize drugs and targets and save them to disk if they don't already exist
@@ -410,30 +464,12 @@ class DTIDataModule(pl.LightningDataModule):
         self.target_featurizer.cpu()
 
         if stage == "fit" or stage is None:
-            self.data_train = BinaryDataset(
-                self.df_train[self._drug_column],
-                self.df_train[self._target_column],
-                self.df_train[self._label_column],
-                self.drug_featurizer,
-                self.target_featurizer,
-            )
+            self.data_train = AbAgContrastiveDataset(self.train_sequences, antibody_embeddings, antigen_embeddings)
 
-            self.data_val = BinaryDataset(
-                self.df_val[self._drug_column],
-                self.df_val[self._target_column],
-                self.df_val[self._label_column],
-                self.drug_featurizer,
-                self.target_featurizer,
-            )
+            self.data_val = AbAgContrastiveDataset(self.val_sequences, antibody_embeddings, antigen_embeddings)
 
         if stage == "test" or stage is None:
-            self.data_test = BinaryDataset(
-                self.df_test[self._drug_column],
-                self.df_test[self._target_column],
-                self.df_test[self._label_column],
-                self.drug_featurizer,
-                self.target_featurizer,
-            )
+            self.data_test = AbAgContrastiveDataset(self.test_sequences, antibody_embeddings, antigen_embeddings)
 
     def train_dataloader(self):
         return DataLoader(self.data_train, **self._loader_kwargs)
