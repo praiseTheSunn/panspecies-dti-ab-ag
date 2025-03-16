@@ -412,38 +412,38 @@ class DTIDataModule(pl.LightningDataModule):
 
 
     def prepare_data(self):
-        """
-        Featurize drugs and targets and save them to disk if they don't already exist
-        """
+        # """
+        # Featurize drugs and targets and save them to disk if they don't already exist
+        # """
 
-        print(f"drug feat path: {self.drug_featurizer.path}\ntarget path:{self.target_featurizer.path}")
-        if self.drug_featurizer.path.exists() and self.target_featurizer.path.exists():
-            print("Drug and target featurizers already exist")
-            return
+        # print(f"drug feat path: {self.drug_featurizer.path}\ntarget path:{self.target_featurizer.path}")
+        # if self.drug_featurizer.path.exists() and self.target_featurizer.path.exists():
+        #     print("Drug and target featurizers already exist")
+        #     return
 
-        print(self._train_path)
-        df_train = pd.read_csv(self._data_dir / self._train_path, **self._csv_kwargs, dtype={self._target_column: str})
+        # print(self._train_path)
+        # df_train = pd.read_csv(self._data_dir / self._train_path, **self._csv_kwargs, dtype={self._target_column: str})
 
-        df_val = pd.read_csv(self._data_dir / self._val_path, **self._csv_kwargs, dtype={self._target_column: str})
+        # df_val = pd.read_csv(self._data_dir / self._val_path, **self._csv_kwargs, dtype={self._target_column: str})
 
-        df_test = pd.read_csv(self._data_dir / self._test_path, **self._csv_kwargs, dtype={self._target_column: str})
+        # df_test = pd.read_csv(self._data_dir / self._test_path, **self._csv_kwargs, dtype={self._target_column: str})
 
-        dataframes = [df_train, df_val, df_test]
-        all_drugs = pd.concat([i[self._drug_column] for i in dataframes]).unique()
-        all_targets = pd.concat([i[self._target_column] for i in dataframes]).unique()
+        # dataframes = [df_train, df_val, df_test]
+        # all_drugs = pd.concat([i[self._drug_column] for i in dataframes]).unique()
+        # all_targets = pd.concat([i[self._target_column] for i in dataframes]).unique()
 
-        if self._device.type == "cuda":
-            self.drug_featurizer.cuda(self._device)
-            self.target_featurizer.cuda(self._device)
+        # if self._device.type == "cuda":
+        #     self.drug_featurizer.cuda(self._device)
+        #     self.target_featurizer.cuda(self._device)
 
-        if not self.drug_featurizer.path.exists():
-            self.drug_featurizer.write_to_disk(all_drugs, file_path=self.drug_featurizer.path)
+        # if not self.drug_featurizer.path.exists():
+        #     self.drug_featurizer.write_to_disk(all_drugs, file_path=self.drug_featurizer.path)
 
-        if not self.target_featurizer.path.exists():
-            self.target_featurizer.write_to_disk(all_targets, file_path=self.target_featurizer.path)
+        # if not self.target_featurizer.path.exists():
+        #     self.target_featurizer.write_to_disk(all_targets, file_path=self.target_featurizer.path)
 
-        self.drug_featurizer.cpu()
-        self.target_featurizer.cpu()
+        # self.drug_featurizer.cpu()
+        # self.target_featurizer.cpu()
 
     def setup(self, stage = None):
         # self.df_train = pd.read_csv(self._data_dir / self._train_path, **self._csv_kwargs, dtype={self._target_column: str})
