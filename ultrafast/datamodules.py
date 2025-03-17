@@ -551,8 +551,14 @@ class TDCDataModule(pl.LightningDataModule):
         self.dg_group = dti_dg_group(path=self._data_dir)
         self.dg_benchmark = self.dg_group.get("bindingdb_patent")
 
-    def prepare_data(self):
+        self.antigen_embeddings = load_embeddings(Path("./antigen.pkl"))
+        self.antibody_embeddings = load_embeddings(Path("./antibody.pkl"))
+        self.train_sequences = load_sequences(Path("./train_pairs.csv"))
+        self.val_sequences = load_sequences(Path("./val_pairs.csv"))
+        self.test_sequences = load_sequences(Path("./test_pairs.csv"))
 
+    def prepare_data(self):
+        return
         train_val, test = (
                 self.dg_benchmark["train_val"],
                 self.dg_benchmark["test"],
@@ -609,61 +615,69 @@ class TDCDataModule(pl.LightningDataModule):
         self.target_featurizer.cpu()
 
     def setup(self, stage: T.Optional[str] = None):
+        # dg_name = self.dg_benchmark["name"]
 
-        dg_name = self.dg_benchmark["name"]
+        # self.df_train, self.df_val = self.dg_group.get_train_valid_split(
+        #         benchmark=dg_name, 
+        #         split_type="default", 
+        #         seed=self._seed
+        #         )
+        # self.df_test = self.dg_benchmark["test"]
+        # if self._target_column == "Target Structure":
+        #     assert self.target_struc_dict is not None
+        #     self.df_train[self._target_column] = self.df_train["Target_ID"].map(self.target_struc_dict)
+        #     self.df_val[self._target_column] = self.df_val["Target_ID"].map(self.target_struc_dict)
+        #     self.df_test[self._target_column] = self.df_test["Target_ID"].map(self.target_struc_dict)
 
-        self.df_train, self.df_val = self.dg_group.get_train_valid_split(
-                benchmark=dg_name, 
-                split_type="default", 
-                seed=self._seed
-                )
-        self.df_test = self.dg_benchmark["test"]
-        if self._target_column == "Target Structure":
-            assert self.target_struc_dict is not None
-            self.df_train[self._target_column] = self.df_train["Target_ID"].map(self.target_struc_dict)
-            self.df_val[self._target_column] = self.df_val["Target_ID"].map(self.target_struc_dict)
-            self.df_test[self._target_column] = self.df_test["Target_ID"].map(self.target_struc_dict)
+        # self._dataframes = [self.df_train, self.df_val, self.df_test]
 
-        self._dataframes = [self.df_train, self.df_val, self.df_test]
+        # all_drugs = pd.concat([i[self._drug_column] for i in self._dataframes]).unique()
+        # all_targets = pd.concat([i[self._target_column] for i in self._dataframes]).unique()
 
-        all_drugs = pd.concat([i[self._drug_column] for i in self._dataframes]).unique()
-        all_targets = pd.concat([i[self._target_column] for i in self._dataframes]).unique()
+        # if self._device.type == "cuda":
+        #     self.drug_featurizer.cuda(self._device)
+        #     self.target_featurizer.cuda(self._device)
 
-        if self._device.type == "cuda":
-            self.drug_featurizer.cuda(self._device)
-            self.target_featurizer.cuda(self._device)
+        # self.drug_featurizer.preload(all_drugs)
+        # self.drug_featurizer.cpu()
 
-        self.drug_featurizer.preload(all_drugs)
-        self.drug_featurizer.cpu()
+        # self.target_featurizer.preload(all_targets)
+        # self.target_featurizer.cpu()
 
-        self.target_featurizer.preload(all_targets)
-        self.target_featurizer.cpu()
+        # if stage == "fit" or stage is None:
+        #     self.data_train = BinaryDataset(
+        #         self.df_train[self._drug_column],
+        #         self.df_train[self._target_column],
+        #         self.df_train[self._label_column],
+        #         self.drug_featurizer,
+        #         self.target_featurizer,
+        #     )
+
+        #     self.data_val = BinaryDataset(
+        #         self.df_val[self._drug_column],
+        #         self.df_val[self._target_column],
+        #         self.df_val[self._label_column],
+        #         self.drug_featurizer,
+        #         self.target_featurizer,
+        #     )
+
+        # if stage == "test" or stage is None:
+        #     self.data_test = BinaryDataset(
+        #         self.df_test[self._drug_column],
+        #         self.df_test[self._target_column],
+        #         self.df_test[self._label_column],
+        #         self.drug_featurizer,
+        #         self.target_featurizer,
+        #     )
 
         if stage == "fit" or stage is None:
-            self.data_train = BinaryDataset(
-                self.df_train[self._drug_column],
-                self.df_train[self._target_column],
-                self.df_train[self._label_column],
-                self.drug_featurizer,
-                self.target_featurizer,
-            )
+            self.data_train = AbAgContrastiveDataset(self.train_sequences, self.antibody_embeddings, self.antigen_embeddings)
 
-            self.data_val = BinaryDataset(
-                self.df_val[self._drug_column],
-                self.df_val[self._target_column],
-                self.df_val[self._label_column],
-                self.drug_featurizer,
-                self.target_featurizer,
-            )
+            self.data_val = AbAgContrastiveDataset(self.val_sequences, self.antibody_embeddings, self.antigen_embeddings)
 
         if stage == "test" or stage is None:
-            self.data_test = BinaryDataset(
-                self.df_test[self._drug_column],
-                self.df_test[self._target_column],
-                self.df_test[self._label_column],
-                self.drug_featurizer,
-                self.target_featurizer,
-            )
+            self.data_test = AbAgContrastiveDataset(self.test_sequences, self.antibody_embeddings, self.antigen_embeddings)
+
 
     def compute_structure_features(self, target_ids):
         """
