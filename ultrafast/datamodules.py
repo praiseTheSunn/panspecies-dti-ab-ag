@@ -203,7 +203,7 @@ class AbAgContrastiveDataset(Dataset):
         # ag_embed = torch.tensor(self.antigen_embeddings[ag], dtype=torch.float32)
         ag_embed = self.antigen_embeddings[ag].clone().detach()
         # print("GET ITEM: ", type(ab_embed.data), type(ag_embed.data))
-        delta_g = float(delta_g)
+        delta_g = torch.tensor(delta_g, dtype=torch.float32)
         return ab_embed, ag_embed, delta_g
 
 # ---------------------------------------
