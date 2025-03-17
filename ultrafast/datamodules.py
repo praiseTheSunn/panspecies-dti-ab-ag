@@ -23,6 +23,7 @@ from ultrafast.featurizers import Featurizer
 from ultrafast.tdc_utils import compute_ESM_features, get_saprot_seq
 
 import pickle
+from tqdm import tqdm
 
 def get_task_dir(task_name: str):
     """
