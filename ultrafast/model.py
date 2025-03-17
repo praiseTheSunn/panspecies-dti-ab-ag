@@ -58,8 +58,11 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         super().__init__()
 
         self.automatic_optimization = False # We will handle the optimization step ourselves
-        self.drug_dim = drug_dim
-        self.target_dim = target_dim
+        # HOANG
+        antibody_embedding_dim = 1024
+        self.drug_dim = antibody_embedding_dim
+        antigen_embedding_dim = 1536
+        self.target_dim = antigen_embedding_dim
         self.latent_dim = latent_dim
         self.activation = activation
 
