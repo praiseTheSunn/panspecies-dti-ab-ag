@@ -26,4 +26,4 @@ replicate: 0
 
 wandb_proj: ConPlexTrain
 model_save_dir: ./best_models
-
+no_wandb = True
