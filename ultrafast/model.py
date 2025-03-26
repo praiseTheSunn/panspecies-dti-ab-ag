@@ -149,16 +149,16 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
 
         # Add a batch dimension if it's missing
         if target.dim() == 2:
-            target = target.unsqueeze(0)
+            target = target.unsqueeze(1)
 
-        print("ADDED batched dimension")
-        print(drug.shape, target.shape)
-        print(drug.dim(), target.dim())
+        # print("ADDED batched dimension")
+        # print(drug.shape, target.shape)
+        # print(drug.dim(), target.dim())
 
         target_projection = self.target_projector(target)
 
-        print("PROJECTED: ", drug_projection.shape, target_projection.shape)
-        print(self.target_projector)
+        # print("PROJECTED: ", drug_projection.shape, target_projection.shape)
+        # print(self.target_projector)
 
         if self.classify:
             similarity = sigmoid_scalar * F.cosine_similarity(
