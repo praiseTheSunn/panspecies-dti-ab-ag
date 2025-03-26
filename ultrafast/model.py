@@ -145,6 +145,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         drug_projection = self.drug_projector(drug)
 
         print(drug.shape, target.shape)
+        print(drug.dim(), target.dim())
 
         # Add a batch dimension if it's missing
         # if target.dim() == 2:
@@ -152,7 +153,8 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
 
         target_projection = self.target_projector(target)
 
-        print(drug_projection.shape, target_projection.shape)
+        print("PROJECTED: ", drug_projection.shape, target_projection.shape)
+        print(self.target_projector)
 
         if self.classify:
             similarity = sigmoid_scalar * F.cosine_similarity(
