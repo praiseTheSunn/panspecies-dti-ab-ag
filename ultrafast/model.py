@@ -152,6 +152,8 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
 
         target_projection = self.target_projector(target)
 
+        print(drug_projection.shape, target_projection.shape)
+
         if self.classify:
             similarity = sigmoid_scalar * F.cosine_similarity(
                 drug_projection, target_projection
