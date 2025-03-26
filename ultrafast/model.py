@@ -148,8 +148,12 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         print(drug.dim(), target.dim())
 
         # Add a batch dimension if it's missing
-        # if target.dim() == 2:
-            # target = target.unsqueeze(0)
+        if target.dim() == 2:
+            target = target.unsqueeze(0)
+
+        print("ADDED batched dimension")
+        print(drug.shape, target.shape)
+        print(drug.dim(), target.dim())
 
         target_projection = self.target_projector(target)
 
