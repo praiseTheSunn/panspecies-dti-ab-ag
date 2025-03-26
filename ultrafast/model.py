@@ -145,8 +145,8 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         drug_projection = self.drug_projector(drug)
 
         # Add a batch dimension if it's missing
-        if target.dim() == 2:
-            target = target.unsqueeze(0)
+        # if target.dim() == 2:
+            # target = target.unsqueeze(0)
 
         target_projection = self.target_projector(target)
 
