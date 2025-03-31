@@ -74,6 +74,8 @@ def train_cli():
     parser.add_argument("--ship-model", help="Train a final to ship model, while excluding the uniprot id's specified by this argument.", dest="ship_model")
     parser.add_argument("--eval-pcba", action="store_true", help="Evaluate PCBA during validation")
     parser.add_argument("--sigmoid-scalar", type=int, default=5, dest="sigmoid_scalar")
+    parser.add_argument("--antigen-pkl-path", help="antigen pkl file that contain antigen embedding", dest="antigen_pkl_path", default="./antigen.pkl")
+    parser.add_argument("--antibody-pkl-path", help="antibody pkl file that contain antibody embedding", dest="antibody_pkl_path", default="./antibody.pkl")
 
     args = parser.parse_args()
     train(**vars(args))
@@ -108,6 +110,8 @@ def train(
     ship_model: str,
     eval_pcba: bool,
     sigmoid_scalar: int,
+    antigen_pkl_path: str,
+    antibody_pkl_path: str
 ):
     args = argparse.Namespace(
         experiment_id=experiment_id,
@@ -179,6 +183,8 @@ def train(
                 "batch_size": config.batch_size,
                 "shuffle": config.shuffle,
                 "num_workers": config.num_workers,
+                "antigen_pkl_path": antigen_pkl_path,
+                "antibody_pkl_path": antibody_pkl_path
                 }
     elif config.task in EnzPredDataModule.dataset_list():
         # Not implemented yet

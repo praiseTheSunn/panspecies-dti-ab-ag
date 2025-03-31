@@ -210,7 +210,7 @@ class AbAgContrastiveDataset(Dataset):
         ag_embed = self.antigen_embeddings[ag].clone().detach()
         # print("GET ITEM: ", type(ab_embed.data), type(ag_embed.data))
         delta_g = torch.tensor(delta_g, dtype=torch.float32)
-        return ag_embed, ab_embed, delta_g
+        return ab_embed, ag_embed, delta_g
 
 # ---------------------------------------
 class BinaryDataset(Dataset):
@@ -504,6 +504,8 @@ class TDCDataModule(pl.LightningDataModule):
             data_dir: str,
             drug_featurizer: Featurizer,
             target_featurizer: Featurizer,
+            antigen_pkl_path: str,
+            antibody_pkl_path: str,
             device: torch.device = torch.device("cpu"),
             seed: int = 0,
             batch_size: int = 32,
@@ -551,8 +553,8 @@ class TDCDataModule(pl.LightningDataModule):
         self.dg_group = dti_dg_group(path=self._data_dir)
         self.dg_benchmark = self.dg_group.get("bindingdb_patent")
 
-        self.antigen_embeddings = load_embeddings(Path("./antigen.pkl"))
-        self.antibody_embeddings = load_embeddings(Path("./antibody.pkl"))
+        self.antigen_embeddings = load_embeddings(Path(antigen_pkl_path))
+        self.antibody_embeddings = load_embeddings(Path(antibody_pkl_path))
         self.train_sequences = load_sequences(Path("./train_pairs.csv"))
         self.val_sequences = load_sequences(Path("./val_pairs.csv"))
         self.test_sequences = load_sequences(Path("./test_pairs.csv"))
