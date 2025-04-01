@@ -190,10 +190,11 @@ def load_sequences(file_path):
 
 # Contrastive Dataset
 class AbAgContrastiveDataset(Dataset):
-    def __init__(self, sequences, antibody_embeddings, antigen_embeddings):
+    def __init__(self, sequences, antibody_embeddings, antigen_embeddings, target_equal_antigen):
         self.antibody_embeddings = antibody_embeddings
         self.antigen_embeddings = antigen_embeddings
         self.pairs = []
+        self.target_equal_antigen = target_equal_antigen
         
         for h, l, ag, delta_g in tqdm(zip(sequences["heavy"], sequences["light"], sequences["antigen"], sequences["delta_g"]), desc = "Loading dataset"):
             if (h, l) in antibody_embeddings and ag in antigen_embeddings:
@@ -210,7 +211,10 @@ class AbAgContrastiveDataset(Dataset):
         ag_embed = self.antigen_embeddings[ag].clone().detach()
         # print("GET ITEM: ", type(ab_embed.data), type(ag_embed.data))
         delta_g = torch.tensor(delta_g, dtype=torch.float32)
-        return ab_embed, ag_embed, delta_g
+        if self.target_equal_antigen:
+            return ab_embed, ag_embed, delta_g
+        else:
+            return ag_embed, ab_embed, delta_g
 
 # ---------------------------------------
 class BinaryDataset(Dataset):
@@ -514,6 +518,7 @@ class TDCDataModule(pl.LightningDataModule):
             header=0,
             index_col=0,
             sep=",",
+            target_equal_antigen=True
         ):
         super().__init__()
 
@@ -558,6 +563,7 @@ class TDCDataModule(pl.LightningDataModule):
         self.train_sequences = load_sequences(Path("./train_pairs.csv"))
         self.val_sequences = load_sequences(Path("./val_pairs.csv"))
         self.test_sequences = load_sequences(Path("./test_pairs.csv"))
+        self.target_equal_antigen = target_equal_antigen
 
     def prepare_data(self):
         return
@@ -673,12 +679,12 @@ class TDCDataModule(pl.LightningDataModule):
         #     )
 
         if stage == "fit" or stage is None:
-            self.data_train = AbAgContrastiveDataset(self.train_sequences, self.antibody_embeddings, self.antigen_embeddings)
+            self.data_train = AbAgContrastiveDataset(self.train_sequences, self.antibody_embeddings, self.antigen_embeddings, self.target_equal_antigen)
 
-            self.data_val = AbAgContrastiveDataset(self.val_sequences, self.antibody_embeddings, self.antigen_embeddings)
+            self.data_val = AbAgContrastiveDataset(self.val_sequences, self.antibody_embeddings, self.antigen_embeddings, self.target_equal_antigen)
 
         if stage == "test" or stage is None:
-            self.data_test = AbAgContrastiveDataset(self.test_sequences, self.antibody_embeddings, self.antigen_embeddings)
+            self.data_test = AbAgContrastiveDataset(self.test_sequences, self.antibody_embeddings, self.antigen_embeddings, self.target_equal_antigen)
 
 
     def compute_structure_features(self, target_ids):

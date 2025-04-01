@@ -76,6 +76,8 @@ def train_cli():
     parser.add_argument("--sigmoid-scalar", type=int, default=5, dest="sigmoid_scalar")
     parser.add_argument("--antigen-pkl-path", help="antigen pkl file that contain antigen embedding", dest="antigen_pkl_path", default="./antigen.pkl")
     parser.add_argument("--antibody-pkl-path", help="antibody pkl file that contain antibody embedding", dest="antibody_pkl_path", default="./antibody.pkl")
+    parser.add_argument("--target-equal-antigen", help="whether to load antigen as target", dest="target_equal_antigen", default=True)
+    parser.add_argument("--target-use-per-res-emb", help="whether target uses per residue embedding", dest="target_use_per_res_emb", default=True)
 
     args = parser.parse_args()
     train(**vars(args))
@@ -111,7 +113,9 @@ def train(
     eval_pcba: bool,
     sigmoid_scalar: int,
     antigen_pkl_path: str,
-    antibody_pkl_path: str
+    antibody_pkl_path: str,
+    target_equal_antigen: bool,
+    target_use_per_res_emb: bool
 ):
     args = argparse.Namespace(
         experiment_id=experiment_id,
@@ -143,6 +147,10 @@ def train(
         ship_model=ship_model,
         eval_pcba=eval_pcba,
         sigmoid_scalar=sigmoid_scalar,
+        antigen_pkl_path= antigen_pkl_path,
+        antibody_pkl_path= antibody_pkl_path,
+        target_equal_antigen= target_equal_antigen,
+        target_use_per_res_emb= target_use_per_res_emb
     )
     config = OmegaConf.load(args.config)
     args_overrides = {k: v for k, v in vars(args).items() if v is not None}
@@ -184,7 +192,8 @@ def train(
                 "shuffle": config.shuffle,
                 "num_workers": config.num_workers,
                 "antigen_pkl_path": antigen_pkl_path,
-                "antibody_pkl_path": antibody_pkl_path
+                "antibody_pkl_path": antibody_pkl_path,
+                "target_equal_antigen": target_equal_antigen
                 }
     elif config.task in EnzPredDataModule.dataset_list():
         # Not implemented yet
@@ -252,7 +261,9 @@ def train(
                 prot_proj=config.prot_proj,
                 dropout=config.dropout,
                 device=device,
-                args=config
+                args=config,
+                target_use_per_res_emb=target_use_per_res_emb,
+                target_equal_antigen=target_equal_antigen
             )
         else:
             print("Initializing new model")
@@ -265,7 +276,9 @@ def train(
                 InfoNCEWeight=config.InfoNCEWeight,
                 prot_proj=config.prot_proj,
                 dropout=config.dropout,
-                args=config
+                args=config,
+                target_use_per_res_emb=target_use_per_res_emb,
+                target_equal_antigen=target_equal_antigen
             )
     else:
         print(f"Loading model from checkpoint: {args.checkpoint}")
@@ -306,7 +319,9 @@ def train(
             prot_proj=config.prot_proj,
             dropout=config.dropout,
             device=device,
-            args=config
+            args=config,
+            target_use_per_res_emb=target_use_per_res_emb,
+            target_equal_antigen=target_equal_antigen
         )
     else:
         print("Initializing new model")
@@ -319,7 +334,9 @@ def train(
             InfoNCEWeight=config.InfoNCEWeight,
             prot_proj = config.prot_proj,
             dropout=config.dropout,
-            args=config
+            args=config,
+            target_use_per_res_emb=target_use_per_res_emb,
+            target_equal_antigen=target_equal_antigen
         )
 
     if not config.no_wandb:

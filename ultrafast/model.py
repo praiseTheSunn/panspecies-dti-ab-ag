@@ -54,6 +54,8 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         contrastive=False,
         InfoNCEWeight=0,
         args=None,
+        target_use_per_res_emb=True,
+        target_equal_antigen=True
     ):
         super().__init__()
 
@@ -61,8 +63,12 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         # HOANG
         antibody_embedding_dim = 1024
         antigen_embedding_dim = 1536
-        self.drug_dim = antibody_embedding_dim 
-        self.target_dim = antigen_embedding_dim
+        if target_equal_antigen:
+            self.drug_dim = antibody_embedding_dim 
+            self.target_dim = antigen_embedding_dim
+        else:
+            self.drug_dim = antigen_embedding_dim 
+            self.target_dim = antibody_embedding_dim
         self.latent_dim = latent_dim
         self.activation = activation
 
@@ -149,7 +155,10 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
 
         # Add a batch dimension if it's missing
         if target.dim() == 2:
-            target = target.unsqueeze(0)
+            if self.target_use_per_res_emb:
+                target = target.unsqueeze(0)
+            else:
+                target = target.unsqueeze(1)
 
         # print("ADDED batched dimension")
         # print(drug.shape, target.shape)
