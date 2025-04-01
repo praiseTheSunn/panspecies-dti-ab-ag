@@ -75,6 +75,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         self.classify = classify
         self.contrastive = contrastive
         self.args = args
+        self.target_use_per_res_emb = target_use_per_res_emb
 
         self.drug_projector = nn.Sequential(
             nn.Linear(self.drug_dim, self.latent_dim), self.activation()
