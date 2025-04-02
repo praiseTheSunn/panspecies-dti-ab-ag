@@ -76,8 +76,8 @@ def train_cli():
     parser.add_argument("--sigmoid-scalar", type=int, default=5, dest="sigmoid_scalar")
     parser.add_argument("--antigen-pkl-path", help="antigen pkl file that contain antigen embedding", dest="antigen_pkl_path", default="./antigen.pkl")
     parser.add_argument("--antibody-pkl-path", help="antibody pkl file that contain antibody embedding", dest="antibody_pkl_path", default="./antibody.pkl")
-    parser.add_argument("--target-equal-antigen", help="whether to load antigen as target", dest="target_equal_antigen", default=True)
-    parser.add_argument("--target-use-per-res-emb", help="whether target uses per residue embedding", dest="target_use_per_res_emb", default=True)
+    parser.add_argument("--target-equal-antigen", help="whether to load antigen as target", dest="target_equal_antigen", action="store_true")
+    parser.add_argument("--target-use-per-res-emb", help="whether target uses per residue embedding", dest="target_use_per_res_emb", action="store_true")
 
     args = parser.parse_args()
     train(**vars(args))
