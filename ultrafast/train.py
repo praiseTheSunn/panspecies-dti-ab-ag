@@ -152,6 +152,9 @@ def train(
         target_equal_antigen= target_equal_antigen,
         target_use_per_res_emb= target_use_per_res_emb
     )
+    print("TARGET EQUAL ANTIGEN?: ", target_equal_antigen)
+    print("USE PER RES EMB: ", target_use_per_res_emb)
+
     config = OmegaConf.load(args.config)
     args_overrides = {k: v for k, v in vars(args).items() if v is not None}
     config.update(args_overrides)
