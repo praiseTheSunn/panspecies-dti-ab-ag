@@ -156,9 +156,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
 
         # Add a batch dimension if it's missing
         if target.dim() == 2:
-            if self.target_use_per_res_emb:
-                target = target.unsqueeze(0)
-            else:
+            if not self.target_use_per_res_emb:
                 target = target.unsqueeze(1)
 
         # print("ADDED batched dimension")
