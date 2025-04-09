@@ -86,7 +86,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             # nn.Linear(self.drug_dim, self.latent_dim), self.activation()
             drug_protein_projector, self.activation()
         )
-        nn.init.xavier_normal_(self.drug_projector[0].weight)
+        nn.init.xavier_normal_(self.drug_projector[0][1].weight)
 
         if prot_proj == "avg":
             protein_projector=nn.Sequential(AverageNonZeroVectors(), nn.Linear(self.target_dim, self.latent_dim))
