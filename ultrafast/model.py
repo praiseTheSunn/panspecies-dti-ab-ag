@@ -62,7 +62,9 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         self.automatic_optimization = False # We will handle the optimization step ourselves
         # HOANG
         antibody_embedding_dim = 1024
-        antigen_embedding_dim = 1536
+        # ESM-3 embedding
+        # antigen_embedding_dim = 1536
+        antigen_embedding_dim = 1280
         if target_equal_antigen:
             self.drug_dim = antibody_embedding_dim 
             self.target_dim = antigen_embedding_dim
@@ -77,8 +79,12 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         self.args = args
         self.target_use_per_res_emb = target_use_per_res_emb
 
+        drug_protein_projector = nn.Sequential(Learned_Aggregation_Layer(self.drug_dim, num_heads=self.args.num_heads_agg, attn_drop=dropout, proj_drop=dropout), nn.Linear(self.drug_dim, self.latent_dim))
+
+
         self.drug_projector = nn.Sequential(
-            nn.Linear(self.drug_dim, self.latent_dim), self.activation()
+            # nn.Linear(self.drug_dim, self.latent_dim), self.activation()
+            drug_protein_projector, self.activation()
         )
         nn.init.xavier_normal_(self.drug_projector[0].weight)
 
