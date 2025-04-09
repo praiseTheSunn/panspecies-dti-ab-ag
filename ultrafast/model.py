@@ -155,6 +155,10 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         model_size = self.args.model_size
         sigmoid_scalar = self.args.sigmoid_scalar
 
+        if drug.dim() == 2:
+            if not self.target_use_per_res_emb:
+                drug = drug.unsqueeze(1)
+
         drug_projection = self.drug_projector(drug)
 
         # print(drug.shape, target.shape)
