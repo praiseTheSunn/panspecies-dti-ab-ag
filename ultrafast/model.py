@@ -184,7 +184,8 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             )
         else:
             similarity = torch.bmm(
-                drug_projection.view(-1, 1, self.latent_dim),
+                # drug_projection.view(-1, 1, self.latent_dim),
+                drug_projection.view(-1, self.latent_dim, 1),
                 target_projection.view(-1, self.latent_dim, 1),
             ).squeeze()
 
