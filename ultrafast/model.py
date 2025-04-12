@@ -78,6 +78,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         self.contrastive = contrastive
         self.args = args
         self.target_use_per_res_emb = target_use_per_res_emb
+        self.self.drug_use_per_res_emb = False
 
         drug_protein_projector = nn.Sequential(Learned_Aggregation_Layer(self.drug_dim, num_heads=self.args.num_heads_agg, attn_drop=dropout, proj_drop=dropout), nn.Linear(self.drug_dim, self.latent_dim))
 
@@ -155,27 +156,27 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         model_size = self.args.model_size
         sigmoid_scalar = self.args.sigmoid_scalar
 
+        print(drug.shape, target.shape)
+        print(drug.dim(), target.dim())
+
         if drug.dim() == 2:
-            if not self.target_use_per_res_emb:
+            if not self.drug_use_per_res_emb:
                 drug = drug.unsqueeze(1)
 
         drug_projection = self.drug_projector(drug)
-
-        # print(drug.shape, target.shape)
-        # print(drug.dim(), target.dim())
 
         # Add a batch dimension if it's missing
         if target.dim() == 2:
             if not self.target_use_per_res_emb:
                 target = target.unsqueeze(1)
 
-        # print("ADDED batched dimension")
-        # print(drug.shape, target.shape)
-        # print(drug.dim(), target.dim())
+        print("ADDED batched dimension")
+        print(drug.shape, target.shape)
+        print(drug.dim(), target.dim())
 
         target_projection = self.target_projector(target)
 
-        # print("PROJECTED: ", drug_projection.shape, target_projection.shape)
+        print("PROJECTED: ", drug_projection.shape, target_projection.shape)
         # print(self.target_projector)
 
         if self.classify:
