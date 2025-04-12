@@ -78,7 +78,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         self.contrastive = contrastive
         self.args = args
         self.target_use_per_res_emb = target_use_per_res_emb
-        self.self.drug_use_per_res_emb = False
+        self.drug_use_per_res_emb = False
 
         drug_protein_projector = nn.Sequential(Learned_Aggregation_Layer(self.drug_dim, num_heads=self.args.num_heads_agg, attn_drop=dropout, proj_drop=dropout), nn.Linear(self.drug_dim, self.latent_dim))
 
