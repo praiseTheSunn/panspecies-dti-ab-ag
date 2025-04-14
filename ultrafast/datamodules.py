@@ -185,7 +185,7 @@ def load_sequences(file_path):
         "heavy": df['Antibody sequence_heavy'].values,
         "light": df['Antibody sequence_light'].values,
         "antigen": df['Antigen sequence'].values,
-        "delta_g": df['delta_g'].values
+        "delta_g": -df['delta_g'].values
     }
 
 # Contrastive Dataset
