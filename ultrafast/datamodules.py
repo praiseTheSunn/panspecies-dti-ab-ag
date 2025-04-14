@@ -176,16 +176,16 @@ def load_sequences(file_path):
     print(df.columns)
 
     # Normalize delta_g to range [0,1]
-    delta_g = df['delta_g'].values.astype(np.float32)
-    delta_g_min = delta_g.min()
-    delta_g_max = delta_g.max()
-    normalized_delta_g = (delta_g - delta_g_min) / (delta_g_max - delta_g_min)
+    # delta_g = df['delta_g'].values.astype(np.float32)
+    # delta_g_min = delta_g.min()
+    # delta_g_max = delta_g.max()
+    # normalized_delta_g = (delta_g - delta_g_min) / (delta_g_max - delta_g_min)
     
     return {
         "heavy": df['Antibody sequence_heavy'].values,
         "light": df['Antibody sequence_light'].values,
         "antigen": df['Antigen sequence'].values,
-        "delta_g": normalized_delta_g
+        "delta_g": df['delta_g'].values
     }
 
 # Contrastive Dataset
