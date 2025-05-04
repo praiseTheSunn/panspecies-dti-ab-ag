@@ -176,16 +176,17 @@ def load_sequences(file_path):
     print(df.columns)
 
     # Normalize delta_g to range [0,1]
-    # delta_g = df['delta_g'].values.astype(np.float32)
-    # delta_g_min = delta_g.min()
-    # delta_g_max = delta_g.max()
-    # normalized_delta_g = (delta_g - delta_g_min) / (delta_g_max - delta_g_min)
+    delta_g = df['delta_g'].values.astype(np.float32)
+    delta_g_min = 5.0400
+    delta_g_max = 16.9138
+    normalized_delta_g = (delta_g - delta_g_min) / (delta_g_max - delta_g_min)
     
     return {
         "heavy": df['Antibody sequence_heavy'].values,
         "light": df['Antibody sequence_light'].values,
         "antigen": df['Antigen sequence'].values,
-        "delta_g": -df['delta_g'].values
+        "delta_g": -df['delta_g'].values,
+        "normalized_delta_g": normalized_delta_g
     }
 
 # Contrastive Dataset
@@ -196,15 +197,15 @@ class AbAgContrastiveDataset(Dataset):
         self.pairs = []
         self.target_equal_antigen = target_equal_antigen
         
-        for h, l, ag, delta_g in tqdm(zip(sequences["heavy"], sequences["light"], sequences["antigen"], sequences["delta_g"]), desc = "Loading dataset"):
+        for h, l, ag, delta_g, normalized_delta_g in tqdm(zip(sequences["heavy"], sequences["light"], sequences["antigen"], sequences["delta_g"], sequences["normalized_delta_g"]), desc = "Loading dataset"):
             if (h, l) in antibody_embeddings and ag in antigen_embeddings:
-                self.pairs.append((((h, l), ag), delta_g))
+                self.pairs.append((((h, l), ag), (delta_g, normalized_delta_g)))
 
     def __len__(self):
         return len(self.pairs)
     
     def __getitem__(self, idx):
-        ((h, l), ag), delta_g = self.pairs[idx]
+        ((h, l), ag), (delta_g, normalized_delta_g) = self.pairs[idx]
         # ab_embed = torch.tensor(, dtype=torch.float32)
         ab_embed = self.antibody_embeddings[(h, l)].clone().detach()
         # ag_embed = torch.tensor(self.antigen_embeddings[ag], dtype=torch.float32)
@@ -212,9 +213,9 @@ class AbAgContrastiveDataset(Dataset):
         # print("GET ITEM: ", type(ab_embed.data), type(ag_embed.data))
         delta_g = torch.tensor(delta_g, dtype=torch.float32)
         if self.target_equal_antigen:
-            return ab_embed, ag_embed, delta_g
+            return ab_embed, ag_embed, delta_g, normalized_delta_g
         else:
-            return ag_embed, ab_embed, delta_g
+            return ag_embed, ab_embed, delta_g, normalized_delta_g
 
 # ---------------------------------------
 class BinaryDataset(Dataset):

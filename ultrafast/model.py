@@ -222,21 +222,27 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         return loss
 
     def non_contrastive_step(self, batch, train=True):
-        drug, protein, label = batch
+        drug, protein, label, normalized_label = batch
         drug, protein, similarity = self.forward(drug, protein)
 
 
         if self.classify:
             similarity = torch.squeeze(self.sigmoid(similarity))
+        else:
+            similarity = torch.squeeze(self.sigmoid(similarity))
 
-        loss = self.loss_fct(similarity, label) 
+        loss = self.loss_fct(similarity, normalized_label) 
         infoloss = 0
         if self.InfoNCEWeight > 0:
-            infoloss = self.InfoNCEWeight * self.infoNCE_loss_fct(drug, protein, label)
+            infoloss = self.InfoNCEWeight * self.infoNCE_loss_fct(drug, protein, normalized_label)
 
         if train:
             return loss * self.CEWeight, infoloss
         else:
+            # unnormalize
+            delta_g_min = 5.0400
+            delta_g_max = 16.9138
+            similarity = (similarity * (delta_g_max - delta_g_min)) + delta_g_min
             return loss, infoloss, similarity
 
     def training_step(self, batch, batch_idx):
@@ -280,7 +286,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         if self.global_step == 0 and self.global_rank == 0 and not self.args.no_wandb:
             wandb.define_metric("val/aupr", summary="max")
-        _, _, label = batch
+        _, _, label, normalized_label = batch
         loss, infoloss, similarity = self.non_contrastive_step(batch, train=False)
         self.log("val/loss", loss, sync_dist=True if self.trainer.num_devices > 1 else False)
         if self.InfoNCEWeight > 0:
@@ -303,7 +309,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         self.val_step_targets.clear()
 
     def test_step(self, batch, batch_idx):
-        _, _, label = batch
+        _, _, label, normalized_label = batch
         _, _, similarity = self.non_contrastive_step(batch, train=False)
 
         self.test_step_outputs.extend(similarity)
