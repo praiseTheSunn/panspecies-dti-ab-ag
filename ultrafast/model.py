@@ -286,6 +286,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         if self.global_step == 0 and self.global_rank == 0 and not self.args.no_wandb:
             wandb.define_metric("val/aupr", summary="max")
+        print("THIS IS THE BATCH: ", batch)
         _, _, label, normalized_label = batch
         loss, infoloss, similarity = self.non_contrastive_step(batch, train=False)
         self.log("val/loss", loss, sync_dist=True if self.trainer.num_devices > 1 else False)
