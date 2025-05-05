@@ -246,7 +246,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             delta_g_min = -16.9138
             delta_g_max = -5.0400
             print("similarity before unnormalize: ", similarity[:5])
-            similarity = (similarity * (delta_g_max - delta_g_min)) + delta_g_min
+            similarity = -((similarity * (delta_g_max - delta_g_min)) + delta_g_min)
             print("checking values: ", label[:5], normalized_label[:5], similarity[:5])
             return loss, infoloss, similarity
 
