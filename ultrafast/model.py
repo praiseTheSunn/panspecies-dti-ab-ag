@@ -243,8 +243,8 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             return loss * self.CEWeight, infoloss
         else:
             # unnormalize
-            delta_g_min = 5.0400
-            delta_g_max = 16.9138
+            delta_g_min = -16.9138
+            delta_g_max = -5.0400
             similarity = (similarity * (delta_g_max - delta_g_min)) + delta_g_min
             return loss, infoloss, similarity
 
