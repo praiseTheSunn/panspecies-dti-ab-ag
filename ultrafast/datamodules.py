@@ -209,7 +209,7 @@ class AbAgContrastiveDataset(Dataset):
     
     def __getitem__(self, idx):
         ((h, l), ag), (delta_g, normalized_delta_g) = self.pairs[idx]
-        print("normalized delta_g: ", normalized_delta_g)
+        # print("normalized delta_g: ", normalized_delta_g)
         # ab_embed = torch.tensor(, dtype=torch.float32)
         ab_embed = self.antibody_embeddings[(h, l)].clone().detach()
         # ag_embed = torch.tensor(self.antigen_embeddings[ag], dtype=torch.float32)
