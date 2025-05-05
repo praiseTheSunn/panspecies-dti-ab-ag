@@ -79,7 +79,7 @@ def embed_collate_fn(args: T.Tuple[torch.Tensor, torch.Tensor], moltype="target"
 
     return mols
 
-def drug_target_collate_fn(args: T.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]):
+def drug_target_collate_fn(args: T.Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]):
     """
     Collate function for PyTorch data loader -- turn a batch of triplets into a triplet of batches
 
@@ -91,12 +91,15 @@ def drug_target_collate_fn(args: T.Tuple[torch.Tensor, torch.Tensor, torch.Tenso
     d_emb = [a[0] for a in args]
     t_emb = [a[1] for a in args]
     labs = [a[2] for a in args]
+    normalized_labs = [a[3] for a in args]
+
 
     drugs = torch.stack(d_emb, 0)
     targets = pad_sequence(t_emb, batch_first=True)
     labels = torch.stack(labs, 0)
+    normalized_labels = torch.stack(normalized_labs, 0)
 
-    return drugs, targets, labels
+    return drugs, targets, labels, normalized_labels
 
 def contrastive_collate_fn(args: T.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]):
     """
@@ -206,12 +209,14 @@ class AbAgContrastiveDataset(Dataset):
     
     def __getitem__(self, idx):
         ((h, l), ag), (delta_g, normalized_delta_g) = self.pairs[idx]
+        print("normalized delta_g: ", normalized_delta_g)
         # ab_embed = torch.tensor(, dtype=torch.float32)
         ab_embed = self.antibody_embeddings[(h, l)].clone().detach()
         # ag_embed = torch.tensor(self.antigen_embeddings[ag], dtype=torch.float32)
         ag_embed = self.antigen_embeddings[ag].clone().detach()
         # print("GET ITEM: ", type(ab_embed.data), type(ag_embed.data))
         delta_g = torch.tensor(delta_g, dtype=torch.float32)
+        normalized_delta_g = torch.tensor(normalized_delta_g, dtype=torch.float32)
         if self.target_equal_antigen:
             return ab_embed, ag_embed, delta_g, normalized_delta_g
         else:
