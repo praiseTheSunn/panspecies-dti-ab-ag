@@ -124,6 +124,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             if self.args.loss_type == "focal":
                 self.loss_fct = FocalLoss()
         else:
+            self.sigmoid = nn.Sigmoid()
             self.val_mse = torchmetrics.MeanSquaredError()
             self.val_pcc = torchmetrics.PearsonCorrCoef()
             self.val_krc = torchmetrics.KendallRankCorrCoef()
@@ -224,13 +225,15 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
     def non_contrastive_step(self, batch, train=True):
         drug, protein, label, normalized_label = batch
         drug, protein, similarity = self.forward(drug, protein)
-
+        print("before sigmoid: normalized_label.shape, similarity.shape: ", normalized_label.shape, similarity.shape)
 
         if self.classify:
             similarity = torch.squeeze(self.sigmoid(similarity))
         else:
             similarity = torch.squeeze(self.sigmoid(similarity))
 
+
+        print("normalized_label.shape, similarity.shape: ", normalized_label.shape, similarity.shape)
         loss = self.loss_fct(similarity, normalized_label) 
         infoloss = 0
         if self.InfoNCEWeight > 0:
@@ -286,7 +289,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         if self.global_step == 0 and self.global_rank == 0 and not self.args.no_wandb:
             wandb.define_metric("val/aupr", summary="max")
-        print("THIS IS THE BATCH: ", batch)
+        # print("THIS IS THE BATCH: ", batch)
         _, _, label, normalized_label = batch
         loss, infoloss, similarity = self.non_contrastive_step(batch, train=False)
         self.log("val/loss", loss, sync_dist=True if self.trainer.num_devices > 1 else False)
