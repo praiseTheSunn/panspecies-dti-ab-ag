@@ -92,6 +92,7 @@ def drug_target_collate_fn(args: T.Tuple[torch.Tensor, torch.Tensor, torch.Tenso
     t_emb = [a[1] for a in args]
     labs = [a[2] for a in args]
     normalized_labs = [a[3] for a in args]
+    seqs = [a[4] for a in args]
 
 
     drugs = torch.stack(d_emb, 0)
@@ -99,7 +100,7 @@ def drug_target_collate_fn(args: T.Tuple[torch.Tensor, torch.Tensor, torch.Tenso
     labels = torch.stack(labs, 0)
     normalized_labels = torch.stack(normalized_labs, 0)
 
-    return drugs, targets, labels, normalized_labels
+    return drugs, targets, labels, normalized_labels, seqs
 
 def contrastive_collate_fn(args: T.Tuple[torch.Tensor, torch.Tensor, torch.Tensor]):
     """
@@ -218,9 +219,9 @@ class AbAgContrastiveDataset(Dataset):
         delta_g = torch.tensor(delta_g, dtype=torch.float32)
         normalized_delta_g = torch.tensor(normalized_delta_g, dtype=torch.float32)
         if self.target_equal_antigen:
-            return ab_embed, ag_embed, delta_g, normalized_delta_g
+            return ab_embed, ag_embed, delta_g, normalized_delta_g, (h, l, ag)
         else:
-            return ag_embed, ab_embed, delta_g, normalized_delta_g
+            return ag_embed, ab_embed, delta_g, normalized_delta_g, (h, l, ag)
 
 # ---------------------------------------
 class BinaryDataset(Dataset):

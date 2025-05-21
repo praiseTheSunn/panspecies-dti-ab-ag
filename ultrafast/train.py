@@ -357,10 +357,12 @@ def train(
             verbose=True
         )
     else:
+        filename_prefix = config.task + "-epoch{epoch:03d}"
+
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
             monitor=config.watch_metric,
             mode="max" if "mse" not in config.watch_metric else "min",
-            filename=config.task,
+            filename=filename_prefix,
             dirpath=save_dir,
             verbose=True
         )

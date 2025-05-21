@@ -1,3 +1,5 @@
+import os
+import pandas as pd
 import torch
 import wandb
 from torch import nn
@@ -148,10 +150,15 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
 
         self.save_hyperparameters()
 
+        self.train_step_outputs = []
+        self.train_step_targets = []
+        self.train_step_seqs = []
         self.val_step_outputs = []
         self.val_step_targets = []
+        self.val_step_seqs = []
         self.test_step_outputs = []
         self.test_step_targets = []
+        self.test_step_seqs = []
 
     def forward(self, drug, target):
         model_size = self.args.model_size
@@ -223,7 +230,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
         return loss
 
     def non_contrastive_step(self, batch, train=True):
-        drug, protein, label, normalized_label = batch
+        drug, protein, label, normalized_label, seqs = batch
         drug, protein, similarity = self.forward(drug, protein)
         print("before sigmoid: normalized_label.shape, similarity.shape: ", normalized_label.shape, similarity.shape)
 
@@ -240,7 +247,14 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             infoloss = self.InfoNCEWeight * self.infoNCE_loss_fct(drug, protein, normalized_label)
 
         if train:
-            return loss * self.CEWeight, infoloss
+            # unnormalize
+            delta_g_min = -16.9138
+            delta_g_max = -5.0400
+            print("similarity before unnormalize: ", similarity[:5])
+            similarity = -((similarity * (delta_g_max - delta_g_min)) + delta_g_min)
+            print("checking values: ", label[:5], normalized_label[:5], similarity[:5])
+
+            return loss * self.CEWeight, infoloss, similarity
         else:
             # unnormalize
             delta_g_min = -16.9138
@@ -248,6 +262,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             print("similarity before unnormalize: ", similarity[:5])
             similarity = -((similarity * (delta_g_max - delta_g_min)) + delta_g_min)
             print("checking values: ", label[:5], normalized_label[:5], similarity[:5])
+
             return loss, infoloss, similarity
 
     def training_step(self, batch, batch_idx):
@@ -264,7 +279,13 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             else:
                 opt = self.optimizers()
             opt.zero_grad()
-            loss,infoloss = self.non_contrastive_step(batch)
+            loss,infoloss, similarity = self.non_contrastive_step(batch)
+
+            _, _, label, normalized_label, seqs = batch
+            self.train_step_outputs.extend(similarity)
+            self.train_step_targets.extend(label)
+            self.train_step_seqs.extend(seqs)
+
             self.manual_backward(loss+infoloss)
             opt.step()
             self.log("train/loss", loss, sync_dist=True if self.trainer.num_devices > 1 else False)
@@ -288,11 +309,28 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             self.log("train/lr", sch.get_lr()[0], sync_dist=True if self.trainer.num_devices > 1 else False)
             sch.step()
 
+            df = pd.DataFrame({
+                "antibody_heavy": [h for h, l, ag in self.train_step_seqs],
+                "antibody_light": [l for h, l, ag in self.train_step_seqs],
+                "antigen": [ag for h, l, ag in self.train_step_seqs],
+                "ground_truth_value": [x.item() for x in self.train_step_targets],
+                "prediction_value": [x.item() for x in self.train_step_outputs],
+            })
+            csv_path = f"tmp_train_preds_epoch_{self.current_epoch}.csv"
+            folder_path = "logs/train_preds"
+            os.makedirs(folder_path, exist_ok=True)
+            csv_path = os.path.join(folder_path, csv_path)
+            df.to_csv(csv_path, index=False)
+
+            self.train_step_outputs.clear()
+            self.train_step_targets.clear()
+            self.train_step_seqs.clear()
+
     def validation_step(self, batch, batch_idx):
         if self.global_step == 0 and self.global_rank == 0 and not self.args.no_wandb:
             wandb.define_metric("val/aupr", summary="max")
         # print("THIS IS THE BATCH: ", batch)
-        _, _, label, normalized_label = batch
+        _, _, label, normalized_label, seqs = batch
         loss, infoloss, similarity = self.non_contrastive_step(batch, train=False)
         self.log("val/loss", loss, sync_dist=True if self.trainer.num_devices > 1 else False)
         if self.InfoNCEWeight > 0:
@@ -300,6 +338,7 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
 
         self.val_step_outputs.extend(similarity)
         self.val_step_targets.extend(label)
+        self.val_step_seqs.extend(seqs)
 
         return {"loss": loss, "preds": similarity, "target": label}
 
@@ -310,16 +349,31 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
             else:
                 metric(torch.Tensor(self.val_step_outputs).cuda(), torch.Tensor(self.val_step_targets).to(torch.float).cuda())
             self.log(f"val/{name}", metric, on_step=False, on_epoch=True, sync_dist=True if self.trainer.num_devices > 1 else False)
+        
+        df = pd.DataFrame({
+            "antibody_heavy": [h for h, l, ag in self.val_step_seqs],
+            "antibody_light": [l for h, l, ag in self.val_step_seqs],
+            "antigen": [ag for h, l, ag in self.val_step_seqs],
+            "ground_truth_value": [x.item() for x in self.val_step_targets],
+            "prediction_value": [x.item() for x in self.val_step_outputs],
+        })
+        csv_path = f"tmp_val_preds_epoch_{self.current_epoch}.csv"
+        folder_path = "logs/val_preds"
+        os.makedirs(folder_path, exist_ok=True)
+        csv_path = os.path.join(folder_path, csv_path)
+        df.to_csv(csv_path, index=False)
 
         self.val_step_outputs.clear()
         self.val_step_targets.clear()
+        self.val_step_seqs.clear()
 
     def test_step(self, batch, batch_idx):
-        _, _, label, normalized_label = batch
+        _, _, label, normalized_label, seqs = batch
         _, _, similarity = self.non_contrastive_step(batch, train=False)
 
         self.test_step_outputs.extend(similarity)
         self.test_step_targets.extend(label)
+        self.test_step_seqs.extend(seqs)
 
         return {"preds": similarity, "target": label}
 
@@ -331,9 +385,22 @@ class DrugTargetCoembeddingLightning(pl.LightningModule):
                 metric(torch.Tensor(self.test_step_outputs).cuda(), torch.Tensor(self.test_step_targets).to(torch.float).cuda())
             self.log(f"test/{name}", metric, on_step=False, on_epoch=True, sync_dist=True if self.trainer.num_devices > 1 else False)
 
+        df = pd.DataFrame({
+            "antibody_heavy": [h for h, l, ag in self.test_step_seqs],
+            "antibody_light": [l for h, l, ag in self.test_step_seqs],
+            "antigen": [ag for h, l, ag in self.test_step_seqs],
+            "ground_truth_value": [x.item() for x in self.test_step_targets],
+            "prediction_value": [x.item() for x in self.test_step_outputs],
+        })
+        csv_path = f"tmp_test_preds_epoch_{self.current_epoch}.csv"
+        folder_path = "logs/test_preds"
+        os.makedirs(folder_path, exist_ok=True)
+        csv_path = os.path.join(folder_path, csv_path)
+        df.to_csv(csv_path, index=False)
 
         self.test_step_outputs.clear()
         self.test_step_targets.clear()
+        self.test_step_seqs.clear()
 
     def embed(self, x, sample_type="drug"):
         model_size = self.args.model_size
